@@ -1,0 +1,15 @@
+{
+  "name": "logging-middleware",
+  "version": "1.0.0",
+  "description": "Custom logging middleware for campus hiring assessment",
+  "main": "logger.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "keywords": ["logging", "middleware"],
+  "author": "",
+  "license": "MIT"
+}
