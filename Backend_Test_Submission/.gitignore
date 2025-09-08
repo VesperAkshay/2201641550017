@@ -9,3 +9,8 @@ yarn-error.log*
 .env.production.local
 logs/
 *.log
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3

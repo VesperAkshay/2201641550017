@@ -69,10 +69,17 @@ npm run dev  # Development with nodemon
 npm start    # Production
 ```
 
+## Database
+
+- **SQLite** database file: `urlshortener.db`
+- **Auto-created** on first run
+- **Tables**: `urls` and `clicks`
+- **Persistent** data storage
+
 ## Architecture
 
 - **Express.js** - Web framework
-- **In-memory storage** - URL and click data (use Redis/DB in production)
+- **SQLite Database** - Persistent storage for URL and click data
 - **Rate limiting** - 100 requests per 15 minutes per IP
 - **Security** - Helmet.js for security headers
 - **Validation** - express-validator for input validation

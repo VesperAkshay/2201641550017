@@ -50,7 +50,8 @@ router.post('/shorturls', validateUrl, async (req, res) => {
     let finalShortcode;
     if (shortcode) {
       // Check if custom shortcode already exists
-      if (urlDatabase.has(shortcode)) {
+      const exists = await urlDatabase.has(shortcode);
+      if (exists) {
         await Log('backend', 'warning', 'urlshortener', `Shortcode already exists: ${shortcode}`);
         return res.status(409).json({
           error: 'Shortcode already exists',
@@ -62,7 +63,7 @@ router.post('/shorturls', validateUrl, async (req, res) => {
       // Generate unique shortcode
       do {
         finalShortcode = nanoid(8);
-      } while (urlDatabase.has(finalShortcode));
+      } while (await urlDatabase.has(finalShortcode));
     }
 
     // Calculate expiry
@@ -79,8 +80,7 @@ router.post('/shorturls', validateUrl, async (req, res) => {
       clickCount: 0
     };
 
-    urlDatabase.set(finalShortcode, urlData);
-    clickDatabase.set(finalShortcode, []);
+    await urlDatabase.set(finalShortcode, urlData);
 
     const shortLink = `http://localhost:5000/${finalShortcode}`;
     
@@ -115,7 +115,7 @@ router.get('/shorturls/:shortcode', [
     }
 
     const { shortcode } = req.params;
-    const urlData = urlDatabase.get(shortcode);
+    const urlData = await urlDatabase.get(shortcode);
 
     if (!urlData) {
       await Log('backend', 'warning', 'urlshortener', `Shortcode not found: ${shortcode}`);
@@ -134,7 +134,7 @@ router.get('/shorturls/:shortcode', [
       });
     }
 
-    const clickData = clickDatabase.get(shortcode) || [];
+    const clickData = await clickDatabase.get(shortcode);
     
     await Log('backend', 'info', 'urlshortener', `Statistics retrieved for: ${shortcode}`);
 
@@ -147,7 +147,7 @@ router.get('/shorturls/:shortcode', [
       clickHistory: clickData.map(click => ({
         timestamp: click.timestamp,
         referrer: click.referrer || 'Direct',
-        userAgent: click.userAgent || 'Unknown',
+        userAgent: click.user_agent || 'Unknown',
         ip: click.ip || 'Unknown',
         location: click.location || 'Unknown'
       }))
@@ -166,7 +166,7 @@ router.get('/shorturls/:shortcode', [
 router.get('/:shortcode', async (req, res) => {
   try {
     const { shortcode } = req.params;
-    const urlData = urlDatabase.get(shortcode);
+    const urlData = await urlDatabase.get(shortcode);
 
     if (!urlData) {
       await Log('backend', 'warning', 'urlshortener', `Redirect failed - shortcode not found: ${shortcode}`);
@@ -194,13 +194,12 @@ router.get('/:shortcode', async (req, res) => {
       location: getCoarseLocation(req.ip || req.connection.remoteAddress)
     };
 
-    const clicks = clickDatabase.get(shortcode) || [];
-    clicks.push(clickData);
-    clickDatabase.set(shortcode, clicks);
+    // Add click to database
+    await clickDatabase.addClick(shortcode, clickData);
 
     // Update click count
     urlData.clickCount++;
-    urlDatabase.set(shortcode, urlData);
+    await urlDatabase.set(shortcode, urlData);
 
     await Log('backend', 'info', 'urlshortener', `Redirect successful: ${shortcode} -> ${urlData.originalUrl}`);
 
@@ -218,7 +217,8 @@ router.get('/:shortcode', async (req, res) => {
 // GET /api/urls - Get all URLs (for frontend)
 router.get('/api/urls', async (req, res) => {
   try {
-    const urls = Array.from(urlDatabase.entries()).map(([shortcode, data]) => ({
+    const entries = await urlDatabase.entries();
+    const urls = entries.map(([shortcode, data]) => ({
       shortcode,
       shortLink: `http://localhost:5000/${shortcode}`,
       originalUrl: data.originalUrl,
