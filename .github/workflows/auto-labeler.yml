@@ -1,0 +1,28 @@
+name: Auto Labeler
+'on':
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - reopened
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  auto-labeler-job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Run Auto Labeler
+      uses: docker://ghcr.io/platform/auto-labeler:1.0.0
+      env:
+        BOT_CONFIG_RULES: '{''frontend/**/*'': [''frontend''], ''backend/**/*'': [''backend''],
+          ''docs/**/*'': [''documentation''], ''*.md'': [''documentation''], ''*.test.*'':
+          [''tests''], ''*.spec.*'': [''tests''], ''docker-compose*.yml'': [''infrastructure''],
+          ''Dockerfile*'': [''infrastructure''], ''.github/**/*'': [''ci/cd'']}'
+        BOT_CONFIG_CASE_SENSITIVE: 'False'
+        BOT_CONFIG_ADD_SIZE_LABELS: 'True'
+        BOT_CONFIG_SIZE_THRESHOLDS: '{''xs'': 10, ''s'': 50, ''m'': 200, ''l'': 500,
+          ''xl'': 1000}'
